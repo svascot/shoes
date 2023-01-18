@@ -12,6 +12,9 @@ func main() {
 
 	http.HandleFunc("/", shoes.GetShoes)
 
+	shoes.CreateTable()
+	shoes.CreateShoes()
+
 	fmt.Println(fmt.Sprintf("Starting application on port %s", portNumber))
 	_ = http.ListenAndServe(portNumber, nil)
 }
