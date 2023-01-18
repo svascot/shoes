@@ -16,10 +16,11 @@ import (
 var dynamo *dynamodb.DynamoDB
 
 type Shoe struct {
-	Id    int    `json:"id"`
-	Name  string `json:"name"`
-	Type  string `json:"type"`
-	Color string `json:"color"`
+	Id    int      `json:"id"`
+	Name  string   `json:"name"`
+	Type  string   `json:"type"`
+	Color []string `json:"color"`
+	Brand string   `json:"brand"`
 }
 
 const TABLE_NAME = "qa_shoes"
@@ -82,8 +83,11 @@ func PutItem(shoe Shoe) {
 			"Type": {
 				S: aws.String(shoe.Type),
 			},
+			"Brand": {
+				S: aws.String(shoe.Brand),
+			},
 			"Color": {
-				S: aws.String(shoe.Color),
+				SS: aws.StringSlice(shoe.Color),
 			},
 		},
 		TableName: aws.String(TABLE_NAME),
@@ -96,24 +100,41 @@ func PutItem(shoe Shoe) {
 	}
 }
 
-func CreateShoes() {
+func createMockShoes() {
 	var moreSneakers []Shoe
 
 	var shoeOne Shoe
 	shoeOne.Id = 1
-	shoeOne.Color = "White"
-	shoeOne.Name = "Jordan 1 low SE triple White"
-	shoeOne.Type = "Jordan 1 low"
-
-	moreSneakers = append(moreSneakers, shoeOne)
+	shoeOne.Name = "Cement True Blue"
+	shoeOne.Brand = "Nike"
+	shoeOne.Color = []string{"Blue", "Gray", "White"}
+	shoeOne.Type = "Air Jordan 1 Mid"
 
 	var shoeTwo Shoe
 	shoeTwo.Id = 2
-	shoeTwo.Color = "Red"
-	shoeTwo.Name = "Jordan 4 Metallic Red"
-	shoeTwo.Type = "Jordan 4"
+	shoeTwo.Name = "Inside Out"
+	shoeTwo.Brand = "Nike"
+	shoeTwo.Color = []string{"Cream", "White", "Gray"}
+	shoeTwo.Type = "Air Jordan 1 Low SE Craft"
 
+	var shoeThree Shoe
+	shoeThree.Id = 3
+	shoeThree.Name = "Adidas Ultraboost"
+	shoeThree.Brand = "Adidas"
+	shoeThree.Color = []string{"Black"}
+	shoeThree.Type = "Ultraboost"
+
+	var shoeFour Shoe
+	shoeFour.Id = 4
+	shoeFour.Name = "Adidas Grand Court"
+	shoeFour.Brand = "Adidas"
+	shoeFour.Color = []string{"Black", "White"}
+	shoeFour.Type = "Grand Court"
+
+	moreSneakers = append(moreSneakers, shoeOne)
 	moreSneakers = append(moreSneakers, shoeTwo)
+	moreSneakers = append(moreSneakers, shoeThree)
+	moreSneakers = append(moreSneakers, shoeFour)
 
 	for _, s := range moreSneakers {
 		PutItem(s)
@@ -121,32 +142,30 @@ func CreateShoes() {
 
 }
 
+func CreateMockData(w http.ResponseWriter, r *http.Request) {
+	createMockShoes()
+	w.Write([]byte("Mock data created"))
+
+}
+
 func GetShoes(w http.ResponseWriter, r *http.Request) {
-	log.Println("GetShoes method")
 
-	var moreSneakers []Shoe
-
-	var shoeOne Shoe
-	shoeOne.Color = "White"
-	shoeOne.Name = "Jordan 1 low SE triple White"
-	shoeOne.Type = "Jordan 1 low"
-
-	moreSneakers = append(moreSneakers, shoeOne)
-
-	var shoeTwo Shoe
-	shoeTwo.Color = "Red"
-	shoeTwo.Name = "Jordan 4 Metallic Red"
-	shoeTwo.Type = "Jordan 4"
-
-	moreSneakers = append(moreSneakers, shoeTwo)
-
-	newJson, err := json.Marshal(moreSneakers)
+	tbl, err := dynamo.Scan(&dynamodb.ScanInput{
+		TableName: aws.String(TABLE_NAME),
+	})
 
 	if err != nil {
-		log.Println("Error marshalling json", err)
+		if aerr, ok := err.(awserr.Error); ok {
+			fmt.Println(aerr.Error())
+		}
 	}
 
-	log.Println(newJson)
+	newJson, err := json.Marshal(tbl.Items)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	w.Write(newJson)
 
 }

@@ -11,9 +11,9 @@ const portNumber = ":9090"
 func main() {
 
 	http.HandleFunc("/", shoes.GetShoes)
+	http.HandleFunc("/mockShoes", shoes.CreateMockData)
 
 	shoes.CreateTable()
-	shoes.CreateShoes()
 
 	fmt.Println(fmt.Sprintf("Starting application on port %s", portNumber))
 	_ = http.ListenAndServe(portNumber, nil)
